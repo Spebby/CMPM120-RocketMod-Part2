@@ -1,0 +1,9 @@
+{
+    "explosions": [
+        { "name": "explosion_00", "path": "explosions/sfx-explosion_00.wav" },
+        { "name": "explosion_01", "path": "explosions/sfx-explosion_01.wav" },
+        { "name": "explosion_02", "path": "explosions/sfx-explosion_02.wav" },
+        { "name": "explosion_03", "path": "explosions/sfx-explosion_03.wav" },
+        { "name": "explosion_04", "path": "explosions/sfx-explosion_04.wav" }
+    ]
+}
