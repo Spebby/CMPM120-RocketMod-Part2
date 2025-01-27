@@ -12,13 +12,12 @@ export class PlayScene extends Phaser.Scene {
 
     private starfield : Phaser.GameObjects.TileSprite;
     private p1Rocket  : Rocket;
-    private ship01    : Spaceship;
-    private ship02    : Spaceship;
-    private ship03    : Spaceship;
+    private ships     : Spaceship[];
     private p1Score   : number;
 
     private scoreLeft : Phaser.GameObjects.Text;
-    private clock : Phaser.Time.TimerEvent;
+    private timeRight : Phaser.GameObjects.Text;
+    private clock     : Phaser.Time.TimerEvent;
 
     private gameOver : boolean;
 
@@ -40,10 +39,11 @@ export class PlayScene extends Phaser.Scene {
         // add rocket (p1)
         this.p1Rocket = new Rocket(this, width / 2, height - UIConfig.borderUISize - UIConfig.borderPadding, 'rocket').setOrigin(0.5, 0);
 
-          // add spaceships (x3)
-        this.ship01 = new Spaceship(this, width + UIConfig.borderUISize * 6, UIConfig.borderUISize * 4, 'spaceship', 0, 30).setOrigin(0, 0);
-        this.ship02 = new Spaceship(this, width + UIConfig.borderUISize * 3, UIConfig.borderUISize * 5 + UIConfig.borderPadding * 2, 'spaceship', 0, 20).setOrigin(0,0);
-        this.ship03 = new Spaceship(this, width, UIConfig.borderUISize * 6 + UIConfig.borderPadding * 4, 'spaceship', 0, 10).setOrigin(0,0);
+        this.ships = [];
+        // add spaceships (x3)
+        this.ships.push(new Spaceship(this, width + UIConfig.borderUISize * 6,  UIConfig.borderUISize * 4,                              'spaceship', 0, 30).setOrigin(0, 0));
+        this.ships.push(new Spaceship(this, width + UIConfig.borderUISize * 3,  UIConfig.borderUISize * 5 + UIConfig.borderPadding * 2, 'spaceship', 0, 20).setOrigin(0, 0));
+        this.ships.push(new Spaceship(this, width,                              UIConfig.borderUISize * 6 + UIConfig.borderPadding * 4, 'spaceship', 0, 10).setOrigin(0, 0));
 
         // initialize score
         this.p1Score = 0;
@@ -56,8 +56,8 @@ export class PlayScene extends Phaser.Scene {
             color: '#843605',
             align: 'right',
             padding: {
-            top: 5,
-            bottom: 5,
+                top: 5,
+                bottom: 5,
             },
             fixedWidth: 100
         };
@@ -69,14 +69,36 @@ export class PlayScene extends Phaser.Scene {
 
         // 60-second play clock
         scoreConfig.fixedWidth = 0;
+
+        // half clock ship speedup
+        this.clock = this.time.delayedCall(GlobalVars.gameTimer / 2, () => {
+            GlobalVars.shipSpeed *= 2;
+            this.ships.forEach(ship => {
+                ship.resetSpeed();
+            });
+        }, null, this);
+
         this.clock = this.time.delayedCall(GlobalVars.gameTimer, () => {
             this.add.text(width/2, height/2, 'GAME OVER', scoreConfig).setOrigin(0.5);
             this.add.text(width/2, height/2 + 64, 'Press (R) to Restart or ← for Menu', scoreConfig).setOrigin(0.5);
             this.gameOver = true;
+            GlobalVars.shipSpeed *= 0.5;
+            if (this.p1Score > GlobalVars.highScore) {
+                GlobalVars.highScore = this.p1Score;
+                this.add.text(width/2, height/2 + 128, 'New High Score!', scoreConfig).setOrigin(0.5);
+            }
         }, null, this);
+
+        // timer
+        let screenWidth  = parseInt(GameConfig.scale.width as string);
+        this.timeRight = this.add.text(screenWidth - (UIConfig.borderUISize + UIConfig.borderPadding * 9), UIConfig.borderUISize + UIConfig.borderPadding * 2, '', scoreConfig);
+        
+        this.events.on('shipDied', this.incrementPoints, this);
     }
 
-    update() {
+    update(time : number, delta : number) {
+        this.timeRight.text = String(Math.max(0, (GlobalVars.gameTimer - this.clock.elapsed) / 1000).toFixed(2));
+
         // check key input for restart
         if(this.gameOver && Phaser.Input.Keyboard.JustDown(KeyMap.keyRESET)) {
             this.scene.restart();
@@ -86,27 +108,22 @@ export class PlayScene extends Phaser.Scene {
             this.scene.start("MenuScene");
         }
 
-        this.starfield.tilePositionX -= 4;
 
         if(!this.gameOver) {
-            this.p1Rocket.update();  // update rocket sprite        
-            this.ship01.update();    // update spaceships (x3)
-            this.ship02.update();
-            this.ship03.update();
+            this.starfield.tilePositionX -= 4;
+            this.p1Rocket.update(time, delta);  // update rocket sprite
+            for (const ship of this.ships) {
+                ship.update(time, delta);
+            }
         }
 
-        // check collisions
-        if(this.checkCollision(this.p1Rocket, this.ship03)) {
-            this.p1Rocket.reset();
-            this.shipExplode(this.ship03);
-        }
-        if (this.checkCollision(this.p1Rocket, this.ship02)) {
-            this.p1Rocket.reset();
-            this.shipExplode(this.ship02);
-        }
-        if (this.checkCollision(this.p1Rocket, this.ship01)) {
-            this.p1Rocket.reset();
-            this.shipExplode(this.ship01);
+
+        // collision check
+        for (const ship of this.ships) {
+            if (this.checkCollision(this.p1Rocket, ship)) {
+                ship.onDeath();
+                ship.reset();
+            }
         }
     }
 
@@ -123,21 +140,8 @@ export class PlayScene extends Phaser.Scene {
         }
     }
 
-    shipExplode(ship : Spaceship) {
-        // temporarily hide ship
-        ship.alpha = 0;
-        // create explosion sprite at ship's position
-        let boom = this.add.sprite(ship.x, ship.y, 'explosion').setOrigin(0, 0);
-        boom.anims.play('explode')             // play explode animation
-        boom.on('animationcomplete', () => {   // callback after anim completes
-          ship.reset();                        // reset ship position
-          ship.alpha = 1;                      // make ship visible again
-          boom.destroy();                      // remove explosion sprite
-        })
-        // score add and text update
-        this.p1Score += ship.getPoints();
+    incrementPoints(points: number) : void {
+        this.p1Score += points;
         this.scoreLeft.text = String(this.p1Score);
-        
-        this.sound.play('sfx-explosion');
     }
 }

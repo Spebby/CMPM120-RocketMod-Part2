@@ -11,7 +11,7 @@ export class Rocket extends Phaser.GameObjects.Sprite {
     private sfxShot : Phaser.Sound.BaseSound;
 
     constructor(scene : Phaser.Scene, x : number, y : number, texture : string, frame : number | null = 0) {
-        super(scene, x, y, texture, frame)
+        super(scene, x, y, texture, frame);
   
         scene.add.existing(this);  // add to existing, displayList, updateList
         this.isFiring = false;     // track rocket's firing status
@@ -22,34 +22,34 @@ export class Rocket extends Phaser.GameObjects.Sprite {
         screenWidth  = parseInt(GameConfig.scale.width  as string);
     }
 
-    update() {
+    update(time : number, delta : number) {
         // left/right movement
         if(!this.isFiring) {
             if(KeyMap.keyLEFT.isDown && this.x >= UIConfig.borderUISize + this.width) {
-                this.x -= this.moveSpeed
+                this.x -= this.moveSpeed;
             } else if(KeyMap.keyRIGHT.isDown && this.x <= screenWidth - UIConfig.borderUISize - this.width) {
-                this.x += this.moveSpeed
+                this.x += this.moveSpeed;
             }
         }
         // fire button
         if(Phaser.Input.Keyboard.JustDown(KeyMap.keyFIRE) && !this.isFiring) {
-            this.isFiring = true
-            this.sfxShot.play()
+            this.isFiring = true;
+            this.sfxShot.play();
         }
         // if fired, move up
         if(this.isFiring && this.y >= UIConfig.borderUISize * 3 + UIConfig.borderPadding) {
-            this.y -= this.moveSpeed
+            this.y -= this.moveSpeed;
         }
         // reset on miss
         if(this.y <= UIConfig.borderUISize * 3 + UIConfig.borderPadding) {
-            this.isFiring = false
-            this.y = screenHeight - UIConfig.borderUISize - UIConfig.borderPadding
+            this.isFiring = false;
+            this.y = screenHeight - UIConfig.borderUISize - UIConfig.borderPadding;
         }
     }
 
     // reset rocket to "ground"
     reset() {
-        this.isFiring = false
-        this.y = screenHeight - UIConfig.borderUISize - UIConfig.borderPadding
+        this.isFiring = false;
+        this.y = screenHeight - UIConfig.borderUISize - UIConfig.borderPadding;
     }
 }

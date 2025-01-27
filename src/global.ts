@@ -4,9 +4,11 @@
 declare global {
     let shipSpeed: number;
     let gameTimer: number;
+    let highScore: number;
 }
 
 export let GlobalVars = {
     shipSpeed : 0,
-    gameTimer : 0
+    gameTimer : 0,
+    highScore : 0
 };

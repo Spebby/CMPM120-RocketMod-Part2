@@ -3,7 +3,7 @@ import { PlayScene } from './scenes/Play';
 
 export const GameConfig : Phaser.Types.Core.GameConfig = {
     title: 'Rocket Mod',
-    url: 'https://github.com/Spebby/CMPM120-RocketMod',
+    url: 'https://github.com/Spebby/CMPM120-RocketMod-Part2',
     version: '0.0.1',
     backgroundColor: 0x3a404d,
     type: Phaser.AUTO,
@@ -28,6 +28,6 @@ export const GameConfig : Phaser.Types.Core.GameConfig = {
 };
 
 export const UIConfig : { borderUISize: number, borderPadding: number } = {
-    borderUISize: (parseInt(GameConfig.scale.height as string) || window.innerHeight) / 15,
+    borderUISize:   (parseInt(GameConfig.scale.height as string) || window.innerHeight) / 15,
     borderPadding: ((parseInt(GameConfig.scale.height as string) || window.innerHeight) / 15) / 3
 };

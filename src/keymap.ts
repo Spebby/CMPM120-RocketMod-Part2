@@ -16,5 +16,3 @@ export class KeyMap {
         KeyMap.keyRESET = scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.R);
     }
 }
-
-
