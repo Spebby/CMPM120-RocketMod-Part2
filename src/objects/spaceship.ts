@@ -7,11 +7,12 @@ let screenHeight : number;
 
 // Spaceship prefab
 export class Spaceship extends Phaser.GameObjects.Sprite {
-    private points    : number;
-    private moveSpeed : number;
+    protected points    : number;
+    protected moveSpeed : number;
+    protected sceneRef  : Phaser.Scene;
+
     private startPos  : number;
     private endPos    : number;
-    private sceneRef  : Phaser.Scene;
 
     constructor(scene : Phaser.Scene, x : number, y : number, texture : string, frame : number, pointValue : number) {
         screenWidth  = parseInt(GameConfig.scale.width as string);

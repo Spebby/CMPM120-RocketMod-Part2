@@ -4,6 +4,7 @@ import { KeyMap } from '../keymap';
 import { Rocket } from '../objects/rocket';
 import { Spaceship } from '../objects/spaceship';
 import { GlobalVars } from "../global";
+import { FastShip } from '../objects/fastShip';
 
 interface TextConfig {
     fontFamily: string;
@@ -16,6 +17,12 @@ interface TextConfig {
         bottom: number;
     };
     fixedWidth: number;
+}
+
+interface shipconf {
+    x : number;
+    y : number;
+    points: number;
 }
 
 let scoreConfig : TextConfig;
@@ -60,9 +67,26 @@ export class PlayScene extends Phaser.Scene {
 
         this.ships = [];
         // add spaceships (x3)
-        this.ships.push(new Spaceship(this, width + UIConfig.borderUISize * 6,  UIConfig.borderUISize * 4,                              'spaceship', 0, 30).setOrigin(0, 0));
-        this.ships.push(new Spaceship(this, width + UIConfig.borderUISize * 3,  UIConfig.borderUISize * 5 + UIConfig.borderPadding * 2, 'spaceship', 0, 20).setOrigin(0, 0));
-        this.ships.push(new Spaceship(this, width,                              UIConfig.borderUISize * 6 + UIConfig.borderPadding * 4, 'spaceship', 0, 10).setOrigin(0, 0));
+
+        let cords : shipconf[] = [
+            {x: width + UIConfig.borderUISize * 6, y: UIConfig.borderUISize * 4, points: 10},
+            {x: width + UIConfig.borderUISize * 3, y: UIConfig.borderUISize * 5 + UIConfig.borderPadding * 2, points: 20},
+            {x: width, y: UIConfig.borderUISize * 6 + UIConfig.borderPadding * 4, points: 30}
+        ];
+
+        let fastShipIndex : number = -1;
+        if (GlobalVars.hardmode || Math.random () > 0.25) {
+            fastShipIndex = Math.floor(Math.random() * 3);
+        }
+
+        for (const [i, cord] of cords.entries()) {
+            if (i == fastShipIndex) {
+                this.ships.push(new FastShip(this, cord.x, cord.y, 'fastship',  0, cord.points * 1.25));
+            } else {
+                this.ships.push(new Spaceship(this, cord.x, cord.y, 'spaceship', 0, cord.points));
+            }
+        }
+        // entierly unneeded to do a seperate object for this but I feel like it to screw around with polymorphism.
 
         // initialize score
         this.p1Score = 0;

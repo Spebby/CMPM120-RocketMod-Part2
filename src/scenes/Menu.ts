@@ -20,7 +20,7 @@ export class MenuScene extends Phaser.Scene {
     preload() : void {
         this.load.image('rocket', `${assetPath}/rocket.png`);
         this.load.image('spaceship', `${assetPath}/spaceship.png`);
-        this.load.image('spaceship', `${assetPath}/fastShip.png`);
+        this.load.image('fastship', `${assetPath}/fastship.png`);
         this.load.image('starfield', `${assetPath}/starfield.png`);
         
         // load spritesheet
@@ -122,8 +122,8 @@ export class MenuScene extends Phaser.Scene {
             GlobalVars.shipSpeed        = 3,
             GlobalVars.gameTimer        = 60000;
             GlobalVars.speedupFactor    = 1.35;
-            GlobalVars.hitBonus         = 2000;
-            GlobalVars.hitPenalty       = 0;
+            GlobalVars.hitBonus         = 1250;
+            GlobalVars.hitPenalty       =  500;
             GlobalVars.strafe           = 0.8;
 
             this.sound.play('sfx-select');
@@ -134,9 +134,10 @@ export class MenuScene extends Phaser.Scene {
             GlobalVars.shipSpeed        = 4;
             GlobalVars.gameTimer        = 45000;
             GlobalVars.speedupFactor    = 1.75;
-            GlobalVars.hitBonus         = 1000;
+            GlobalVars.hitBonus         =  500;
             GlobalVars.hitPenalty       = 2000;
             GlobalVars.strafe           = 0.4;
+            GlobalVars.hardmode         = true;
 
             this.sound.play('sfx-select');
             this.scene.start('PlayScene');

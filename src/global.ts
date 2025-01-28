@@ -1,6 +1,6 @@
 // global to get around prof's hack-y use of game config.
+// supposed to be a .d.ts file, but had some weird issues with it.
 
-// global.d.ts
 declare global {
     let shipSpeed: number;
     let gameTimer: number;
@@ -9,6 +9,7 @@ declare global {
     let hitBonus   : number;
     let hitPenalty : number;
     let strafe     : number;
+    let hardmode   : boolean;
 }
 
 export let GlobalVars = {
@@ -19,4 +20,5 @@ export let GlobalVars = {
     hitBonus   : 0,
     hitPenalty : 0,
     strafe     : 0,
+    hardmode   : false,
 };
