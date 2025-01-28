@@ -5,6 +5,23 @@ import { Rocket } from '../objects/rocket';
 import { Spaceship } from '../objects/spaceship';
 import { GlobalVars } from "../global";
 
+interface TextConfig {
+    fontFamily: string;
+    fontSize: string;
+    backgroundColor: string;
+    color: string;
+    align: string;
+    padding: {
+        top: number;
+        bottom: number;
+    };
+    fixedWidth: number;
+}
+
+let scoreConfig : TextConfig;
+let width  : number;
+let height : number;
+
 export class PlayScene extends Phaser.Scene {
     constructor() {
         super('PlayScene');
@@ -17,16 +34,18 @@ export class PlayScene extends Phaser.Scene {
 
     private scoreLeft : Phaser.GameObjects.Text;
     private timeRight : Phaser.GameObjects.Text;
-    private clock     : Phaser.Time.TimerEvent;
+    private hClock    : Phaser.Time.TimerEvent;
+    private fClock    : Phaser.Time.TimerEvent;
 
     private gameOver : boolean;
+    private playerWasFiring : boolean;
 
     create() : void {
         KeyMap.initialize(this);
         // place tile sprite
         this.starfield = this.add.tileSprite(0, 0, 640, 480, 'starfield').setOrigin(0, 0);
-        let width  = parseInt(GameConfig.scale.width  as string);
-        let height = parseInt(GameConfig.scale.height as string);
+        width  = parseInt(GameConfig.scale.width  as string);
+        height = parseInt(GameConfig.scale.height as string);
 
         // green UI background
         this.add.rectangle(0, UIConfig.borderUISize + UIConfig.borderPadding, width, UIConfig.borderUISize * 2, 0x00FF00).setOrigin(0, 0);
@@ -49,7 +68,7 @@ export class PlayScene extends Phaser.Scene {
         this.p1Score = 0;
 
         // display score
-        let scoreConfig = {
+        scoreConfig = {
             fontFamily: 'Courier',
             fontSize: '28px',
             backgroundColor: '#F3B141',
@@ -71,33 +90,49 @@ export class PlayScene extends Phaser.Scene {
         scoreConfig.fixedWidth = 0;
 
         // half clock ship speedup
-        this.clock = this.time.delayedCall(GlobalVars.gameTimer / 2, () => {
-            GlobalVars.shipSpeed *= 2;
-            this.ships.forEach(ship => {
-                ship.resetSpeed();
-            });
-        }, null, this);
+        this.hClock = this.time.addEvent({
+            delay: GlobalVars.gameTimer / 2,
+            callback: this.halfClockHandler,
+            callbackScope: this,
+            loop: false,
+        });
 
-        this.clock = this.time.delayedCall(GlobalVars.gameTimer, () => {
-            this.add.text(width/2, height/2, 'GAME OVER', scoreConfig).setOrigin(0.5);
-            this.add.text(width/2, height/2 + 64, 'Press (R) to Restart or ← for Menu', scoreConfig).setOrigin(0.5);
-            this.gameOver = true;
-            GlobalVars.shipSpeed *= 0.5;
-            if (this.p1Score > GlobalVars.highScore) {
-                GlobalVars.highScore = this.p1Score;
-                this.add.text(width/2, height/2 + 128, 'New High Score!', scoreConfig).setOrigin(0.5);
-            }
-        }, null, this);
+        this.fClock = this.time.addEvent({
+            delay: GlobalVars.gameTimer,
+            callback: this.gameOverHandler,
+            loop: false,
+        });
 
         // timer
-        let screenWidth  = parseInt(GameConfig.scale.width as string);
+        let screenWidth : number = parseInt(GameConfig.scale.width as string);
         this.timeRight = this.add.text(screenWidth - (UIConfig.borderUISize + UIConfig.borderPadding * 9), UIConfig.borderUISize + UIConfig.borderPadding * 2, '', scoreConfig);
         
         this.events.on('shipDied', this.incrementPoints, this);
     }
 
+    gameOverHandler() : void {
+        this.add.text(width/2, height/2, 'GAME OVER', scoreConfig).setOrigin(0.5);
+        this.add.text(width/2, height/2 + 64, 'Press (R) to Restart or ← for Menu', scoreConfig).setOrigin(0.5);
+        this.gameOver = true;
+        GlobalVars.shipSpeed *= 1/GlobalVars.speedupFactor;
+
+        if (this.p1Score > GlobalVars.highScore) {
+            GlobalVars.highScore = this.p1Score;
+            const expires = "expires=Fri, 31 Dec 9999 23:59:59 GMT"; // Far-future expiration date
+            document.cookie = `highscore=${this.p1Score}; ${expires}; path=/`;
+            this.add.text(width/2, height/2 + 128, 'New High Score!', scoreConfig).setOrigin(0.5);
+        }
+    }
+
+    halfClockHandler() : void {
+        GlobalVars.shipSpeed *= GlobalVars.speedupFactor;
+        this.ships.forEach(ship => {
+            ship.resetSpeed();
+        });
+    }
+
     update(time : number, delta : number) {
-        this.timeRight.text = String(Math.max(0, (GlobalVars.gameTimer - this.clock.elapsed) / 1000).toFixed(2));
+        this.timeRight.text = String(Math.max(0, this.fClock.getRemainingSeconds()).toFixed(2));
 
         // check key input for restart
         if(this.gameOver && Phaser.Input.Keyboard.JustDown(KeyMap.keyRESET)) {
@@ -108,7 +143,6 @@ export class PlayScene extends Phaser.Scene {
             this.scene.start("MenuScene");
         }
 
-
         if(!this.gameOver) {
             this.starfield.tilePositionX -= 4;
             this.p1Rocket.update(time, delta);  // update rocket sprite
@@ -117,12 +151,42 @@ export class PlayScene extends Phaser.Scene {
             }
         }
 
+        let isPlayerFiring = this.p1Rocket.isFiring();
+        // don't do any of the other checks.
+        if (!this.playerWasFiring && !isPlayerFiring) {
+            if (!this.p1Rocket.hasHit) {
+                let timer = this.fClock.getRemaining() - GlobalVars.hitPenalty;
+                this.fClock.reset({
+                    delay: timer,
+                    callback: this.gameOverHandler,
+                    callbackScope: this,
+                    loop: false,
+                });
+                this.p1Rocket.hasHit = true;
+            }
+            this.playerWasFiring = true;
+        } else if (!isPlayerFiring) {
+            this.playerWasFiring = false;
+            return;
+        }
 
         // collision check
         for (const ship of this.ships) {
             if (this.checkCollision(this.p1Rocket, ship)) {
                 ship.onDeath();
                 ship.reset();
+
+                // apply hit bonus
+                let timer = this.fClock.getRemaining() + GlobalVars.hitBonus;
+                this.fClock.reset({
+                    delay: timer,
+                    callback: this.gameOverHandler,
+                    callbackScope: this,
+                    loop: false,
+                });
+
+                this.p1Rocket.hasHit = true;
+                break;
             }
         }
     }
@@ -131,12 +195,12 @@ export class PlayScene extends Phaser.Scene {
         // simple AABB checking
         // gross
         if (rocket.x < ship.x + ship.width && 
-          rocket.x + rocket.width > ship.x && 
-          rocket.y < ship.y + ship.height &&
-          rocket.height + rocket.y > ship. y) {
-          return true;
+            rocket.x + rocket.width > ship.x && 
+            rocket.y < ship.y + ship.height &&
+            rocket.height + rocket.y > ship. y) {
+            return true;
         } else {
-          return false;
+            return false;
         }
     }
 

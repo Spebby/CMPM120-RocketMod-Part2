@@ -20,6 +20,7 @@ export class MenuScene extends Phaser.Scene {
     preload() : void {
         this.load.image('rocket', `${assetPath}/rocket.png`);
         this.load.image('spaceship', `${assetPath}/spaceship.png`);
+        this.load.image('spaceship', `${assetPath}/fastShip.png`);
         this.load.image('starfield', `${assetPath}/starfield.png`);
         
         // load spritesheet
@@ -36,9 +37,8 @@ export class MenuScene extends Phaser.Scene {
         this.load.audio('sfx-shot', `${assetPath}/sfx-shot.wav`);
         SoundLib.addSound('shot', new Sound('sfx-shot'))
 
-
         this.load.json('soundData', `${assetPath}/soundData.json`);
-        
+
         // Wait until the JSON file is loaded to continue loading the sounds
         this.load.once('complete', () => {
             // Retrieve the sound data from the loaded JSON
@@ -70,6 +70,16 @@ export class MenuScene extends Phaser.Scene {
 
     create() : void {
         KeyMap.initialize(this);
+
+        // get highscore cookie
+        for (const cookie of document.cookie.split("; ")) {
+            const [key, value] = cookie.split("=");
+            if (key === "highscore") {
+                GlobalVars.highScore = parseInt(decodeURIComponent(value));
+                break;
+            }
+        }
+
         // animation configuration
         this.anims.create({
             key: 'explode',
@@ -109,16 +119,24 @@ export class MenuScene extends Phaser.Scene {
     update() : void {
         if (Phaser.Input.Keyboard.JustDown(KeyMap.keyLEFT)) {
             // easy mode
-            GlobalVars.shipSpeed = 3,
-            GlobalVars.gameTimer = 60000;
+            GlobalVars.shipSpeed        = 3,
+            GlobalVars.gameTimer        = 60000;
+            GlobalVars.speedupFactor    = 1.35;
+            GlobalVars.hitBonus         = 2000;
+            GlobalVars.hitPenalty       = 0;
+            GlobalVars.strafe           = 0.8;
 
             this.sound.play('sfx-select');
             this.scene.start('PlayScene');
         };
         if (Phaser.Input.Keyboard.JustDown(KeyMap.keyRIGHT)) {
             // hard mode
-            GlobalVars.shipSpeed = 4;
-            GlobalVars.gameTimer = 45000;
+            GlobalVars.shipSpeed        = 4;
+            GlobalVars.gameTimer        = 45000;
+            GlobalVars.speedupFactor    = 1.75;
+            GlobalVars.hitBonus         = 1000;
+            GlobalVars.hitPenalty       = 2000;
+            GlobalVars.strafe           = 0.4;
 
             this.sound.play('sfx-select');
             this.scene.start('PlayScene');

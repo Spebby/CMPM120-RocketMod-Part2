@@ -14,25 +14,26 @@ export class Spaceship extends Phaser.GameObjects.Sprite {
     private sceneRef  : Phaser.Scene;
 
     constructor(scene : Phaser.Scene, x : number, y : number, texture : string, frame : number, pointValue : number) {
+        screenWidth  = parseInt(GameConfig.scale.width as string);
+        screenHeight = parseInt(GameConfig.scale.height as string);
+        
+        let swap = Math.random() > 0.5;
+        x = swap ? -x : x;
+
         super(scene, x, y, texture, frame);
         this.sceneRef = scene;
         this.sceneRef.add.existing(this);          // add to existing scene
 
         this.points    = pointValue;               // store pointValue
         this.moveSpeed = GlobalVars.shipSpeed;     // spaceship speed in pixels/frame
-        screenWidth  = parseInt(GameConfig.scale.width as string);
-        screenHeight = parseInt(GameConfig.scale.height as string);
+
 
         this.startPos = screenWidth;
         this.endPos   = 0;
 
-        // left to right instead.
-        if (Math.random() > 0.5) {
-            this.moveSpeed  = -this.moveSpeed;
-            this.endPos     = this.startPos;
-            this.startPos   = 0;
-            this.flipX = true;
-        }
+        // pick random dir
+        this.shuffleDirection(swap);
+        console.log(`Spaceship created at : (${Math.round(x)}, ${Math.round(y)}) with speed ${this.moveSpeed}!`);
     }
 
     update(time : number, delta : number) : void {
@@ -40,9 +41,17 @@ export class Spaceship extends Phaser.GameObjects.Sprite {
         this.x -= this.moveSpeed;
 
         // wrap from end to start post
-        if (this.x < Math.min(this.startPos, this.endPos) || this.x > Math.max(this.startPos, this.endPos)) {
+        if (this.outOfBounds()) {
             this.reset();
         }
+    }
+
+    outOfBounds() : boolean {
+        if (this.endPos > 0) {
+            return this.x > this.endPos;            
+        }
+
+        return this.x < this.endPos;
     }
 
     // reset position
@@ -59,16 +68,15 @@ export class Spaceship extends Phaser.GameObjects.Sprite {
     }
 
     resetSpeed() : void {
-        this.moveSpeed = GlobalVars.shipSpeed;
+        let side = this.flipX ? -1 : 1;
+        this.moveSpeed = GlobalVars.shipSpeed * side;
     }
 
-    shuffleDirection() : void {
-        if (Math.random() > 0.5) {
-            this.moveSpeed  = -this.moveSpeed;
-            var t           = this.endPos;
-            this.endPos     = this.startPos;
-            this.startPos   = t;
-            this.flipX      = !this.flipX;
+    shuffleDirection(swap? : boolean) : void {
+        if (swap ?? Math.random() > 0.5) {
+            this.setSpeedMultiplier(-1);
+            [this.endPos, this.startPos] = [this.startPos, this.endPos];
+            this.flipX = !this.flipX;
         }
     }
 
