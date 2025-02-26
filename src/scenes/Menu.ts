@@ -20,7 +20,7 @@ export class MenuScene extends Phaser.Scene {
     preload() : void {
         this.load.image('rocket', `${assetPath}/rocket.png`);
         this.load.image('spaceship', `${assetPath}/spaceship.png`);
-        this.load.image('fastship', `${assetPath}/fastship.png`);
+        this.load.image('fastship', `${assetPath}/fastShip.png`);
         this.load.image('starfield', `${assetPath}/starfield.png`);
         
         // load spritesheet
